@@ -8,7 +8,7 @@ window.requestAnimationFrame(function () {
     var _size = 4;
     var total = _size * _size;
     var direction_literal = { 0: "up", 1: "right", 2: "down", 3: "left", };
-    var enable = false;
+    var enable = true;
 
     document.addEventListener( "keydown", function( ev ){
         if ( ev.which == 32 ) {
