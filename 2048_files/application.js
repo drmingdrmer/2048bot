@@ -8,24 +8,54 @@ window.requestAnimationFrame(function () {
     var _size = 4;
     var total = _size * _size;
     var direction_literal = { 0: "up", 1: "right", 2: "down", 3: "left", };
-    var enable = true;
+    var enable = false;
+    var debug = true;
+    // var debug = false;
+
+    if ( debug ) {
+    }
+    else {
+        console.log = function(){}
+    }
 
     document.addEventListener( "keydown", function( ev ){
-        if ( ev.which == 32 ) {
-            // move_one();
-            enable = !enable;
+        // u
+        if ( ev.which == 85 ) {
+            gm.storageManager.setGameState( window.prev );
+            gm.setup();
             event.preventDefault();
+            return;
         }
 
+
+        // o
+        if ( ev.which == 79 ) {
+            move_one();
+            event.preventDefault();
+            return;
+        }
+
+        // space
+        if ( ev.which == 32 ) {
+            enable = !enable;
+            event.preventDefault();
+            return;
+        }
+
+        // enter
         if ( ev.which == 13 ) {
+
             console.clear();
+
             var move = get_move();
+
             console.log( "decided direction:", direction_literal[ move.direction ] );
+
             var arr = toarr( gm.grid.cells );
             move_arr( arr, move.direction );
             logarr( arr );
-
             event.preventDefault();
+            return;
         }
 
     } );
@@ -37,10 +67,12 @@ window.requestAnimationFrame(function () {
     }, 10 );
 
     function move_one () {
-        // console.clear();
+        window.prev = gm.serialize();
+
+        console.clear();
 
         move = get_move();
-        // console.log( "decided direction:", direction_literal[ move.direction ] );
+        console.log( "decided direction:", direction_literal[ move.direction ] );
         gm.move( move.direction );
     }
 
@@ -55,7 +87,7 @@ window.requestAnimationFrame(function () {
     function calc_step ( arr ) {
 
         console.log( "calc_step----------------" );
-        var r = search( arr, 2 );
+        var r = search_highest( arr, 1 );
         return r;
     }
 
@@ -71,7 +103,7 @@ window.requestAnimationFrame(function () {
         return n;
     }
 
-    function search ( arr, depth ) {
+    function search_highest ( arr, depth ) {
 
         var copy;
         var maxmove = { r:0, direction: 0 };
@@ -124,9 +156,8 @@ window.requestAnimationFrame(function () {
                             continue;
                         }
 
-
                         copy[ y ][ x ] = 2;
-                        r2 = search( copy, depth-1 );
+                        r2 = search_highest( copy, depth-1 );
 
                         if ( ! lowest.r || lowest.r > r2.r ) {
                             lowest = { r:r2.r, arr: make_copy( copy ), direction:r2.direction };
@@ -135,24 +166,24 @@ window.requestAnimationFrame(function () {
                     }
                 }
 
-                // console.log( "search: depth: ", depth, "move: ", dword );
-                // logarr( arr, depth );
+                console.log( "search: depth: ", depth, "move: ", dword );
+                logarr( arr, depth );
 
-                // console.log( "current rank" );
-                // logarr( connectivity_rank( arr, true ), depth );
+                console.log( "current rank" );
+                logarr( connectivity_rank( arr, true ), depth );
 
-                // console.log( "after move ", dword );
-                // logarr( copy, depth );
+                console.log( "after move ", dword );
+                logarr( copy, depth );
 
-                // console.log( "worst case: ", lowest.r, "direction:", lowest.direction );
-                // logarr( lowest.arr, depth );
+                console.log( "worst case: ", lowest.r );
+                logarr( lowest.arr, depth );
 
-                // console.log( "best choice in worst case:" );
-                // move_arr( lowest.arr, lowest.direction );
-                // logarr( lowest.arr, depth );
+                console.log( "best choice in worst case:", direction_literal[ lowest.direction ] );
+                move_arr( lowest.arr, lowest.direction );
+                logarr( lowest.arr, depth );
 
-                // console.log( "solution rank" );
-                // logarr( connectivity_rank( lowest.arr, true ), depth );
+                console.log( "solution rank" );
+                logarr( connectivity_rank( lowest.arr, true ), depth );
 
                 r = lowest.r;
             }
@@ -165,8 +196,8 @@ window.requestAnimationFrame(function () {
                 maxmove = { r:r, direction:d };
             }
         }
-        // console.log( "search result r:", maxmove.r, "direction:", direction_literal[ maxmove.direction ], "depth:", depth );
-        // logarr( depth );
+        console.log( "search result r:", maxmove.r, "direction:", direction_literal[ maxmove.direction ], "depth:", depth );
+        logarr( depth );
 
         // maxmove.r *= has_move;
         return maxmove;
@@ -252,13 +283,13 @@ window.requestAnimationFrame(function () {
                 e = arr[ y ][ x ];
                 dist = distance( [ i0, j0 ], [ y, x ] );
 
-                if ( e > 0 && dist <= 1 ) {
+                if ( e > 0 && dist <= 2 ) {
                     nrank = num_rank( frm, e );
                     rank = nrank / ( dist + 1 );
 
                     if ( i0 != y || j0 != x ) {
+                        positive += rank;
                         if ( rank > max_rank ) {
-                            positive += rank;
                             posarr[ y ][ x ] = rank;
                             max_rank = rank;
                         }
@@ -277,10 +308,10 @@ window.requestAnimationFrame(function () {
         }
 
         if ( i0 == 0 || i0 == _size-1 ) {
-            positive += num_rank( frm, frm*2 ) * 1;
+            positive += num_rank( frm, frm*4 ) * 0.7;
         }
         if ( j0 == 0 || j0 == _size-1 ) {
-            positive += num_rank( frm, frm*2 ) * 1;
+            positive += num_rank( frm, frm*4 ) * 0.7;
         }
 
         rst = positive;
@@ -375,7 +406,9 @@ window.requestAnimationFrame(function () {
     }
 
     function logarr (arr, depth) {
-        return;
+        if ( ! debug ) {
+            return;
+        }
         var s = "                              ";
         var indent = s.substr( 0, 16-depth*4 );
         for ( var y = 0; y < arr.length; y++ ) {
@@ -399,8 +432,12 @@ window.requestAnimationFrame(function () {
         if ( a == 0 && b == 0 ) {
             return 0;
         }
-        var distance = Math.abs(lg2( a ) - lg2( b )) + 1;
-        var v = Math.min( a, b );
+        var distance = Math.abs(lg2( a ) - lg2( b )) + 3;
+        var abmin = Math.min( a, b );
+        var abmax = Math.max( a, b );
+
+        // var v = abmin * 0.7 + abmax * 0.3;
+        var v = abmin;
         return v*v / distance;
     }
 
